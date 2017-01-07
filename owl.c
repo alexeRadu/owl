@@ -1,16 +1,66 @@
 #include <ncurses.h>
 
-#define message(...) \
-	{						\
-		int r, c;				\
-							\
-		getmaxyx(stdscr, r, c);			\
-		clear();				\
-		mvprintw(r >> 1, c >> 1, __VA_ARGS__);	\
-		refresh();				\
-		getch();				\
-		clear();				\
+
+#define min(a, b) 	((a < b) ? (a) : (b))
+
+#define MSG_BUF_LEN	256
+#define MAJOR_VERSION	0
+#define MINOR_VERSION	1
+
+#define println_center(row, col, sl, el) 			\
+	do {							\
+		*el = 0;					\
+		mvaddstr(row, col - ((el - sl) >> 1), sl);	\
+		row += 1;					\
+		sl = el + 1;					\
 	} while (0)
+
+static void splash_screen(const char *fmt, ...)
+{
+	va_list arg;
+	int row, col;
+	char msg[MSG_BUF_LEN];
+	char *sline, *eline; 	/* start, end of line */
+	char *b;
+
+	/* copy the input string to buffer */
+	va_start(arg, fmt);
+	vsnprintf(msg, MSG_BUF_LEN, fmt, arg);
+	va_end(arg);
+	msg[MSG_BUF_LEN] = 0;
+
+	/* get center screen coordinates */
+	getmaxyx(stdscr, row, col);
+	row = row >> 1;
+	col = col >> 1;
+	clear();
+
+	b = sline = msg;
+	while (1) {
+		if ((*b == ' ')  || (*b == '\t') ||
+		    (*b == '\n') || (*b == 0)) {
+			if ((b - sline) > (col << 1))
+				println_center(row, col, sline, eline);
+
+			eline = b;
+		}
+
+
+		if (*b == 0) {
+			println_center(row, col, sline, eline);
+			break;
+		}
+
+		if (*b == '\n')
+			println_center(row, col, sline, eline);
+
+		b++;
+	}
+
+	refresh();
+	getch();
+	clear();
+}
 
 int main(int argc, char **argv)
 {
@@ -24,7 +74,8 @@ int main(int argc, char **argv)
 	/* enable reading of functional keys (F1, F2, arrow keys, etc */
 	keypad (stdscr, TRUE);
 
-	message("Starting the editor");
+	splash_screen("The OWL editor version %d.%d\nAuthor: Alexe Radu Andrei\n"
+			"Press any key to continue", MAJOR_VERSION, MINOR_VERSION);
 
 	printw("Special caracters:");
 	printw("\n - upper left corner: ");	addch(ACS_ULCORNER);
@@ -57,7 +108,7 @@ int main(int argc, char **argv)
 		refresh();
 
 		if (ch == KEY_F(1)) {
-			message("Exiting the editor");
+			splash_screen("Goodbye");
 			break;
 		}
 	}
