@@ -5,5 +5,5 @@ ncurses-test: ncurses-test.c
 	gcc -o ncurses-test ncurses-test.c -lncurses
 
 clean:
-	rm ncurses-test
-	rm test
+	-rm ncurses-test
+	-rm test
