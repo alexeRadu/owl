@@ -4,12 +4,16 @@
 #include <string.h>
 
 #define LINE_INIT_CAPACITY	128
-#define FILE_TMP_BUF_SIZE	1024
-#define EOF_TOKEN		"\n"
+#define FILE_TMP_BUF_SIZE	256
+#define EOL_TOKEN		"\n"
+#define EOL_TOKEN_LENGTH	1
+
+#define ENOMEM			1
 
 struct line {
 	size_t length;
 	size_t capacity;
+	struct line *prev;
 	struct line *next;
 	char data[];
 };
@@ -18,14 +22,10 @@ struct buffer {
 	struct line *lines;
 };
 
-struct line *line_new(const char *text)
+struct line *line_new(size_t length)
 {
 	struct line *line;
-	size_t length;
-	size_t capacity;
-
-	length = strlen(text);
-	capacity = LINE_INIT_CAPACITY;
+	size_t capacity = LINE_INIT_CAPACITY;
 
 	while (capacity < length)
 		capacity = capacity * 2;
@@ -33,10 +33,63 @@ struct line *line_new(const char *text)
 	line = malloc(sizeof(struct line) + capacity);
 	if (line) {
 		line->capacity = capacity;
-		line->length = length;
+		line->length = 0;
+		line->prev = NULL;
 		line->next = NULL;
-		memcpy(line->data, text, length);
 	}
+
+	return line;
+}
+
+struct line *line_expand(struct line *line, size_t new_size)
+{
+	struct line *dst = line;
+
+	if (new_size <= line->capacity)
+		return line;
+
+	dst = line_new(new_size);
+	if (dst == NULL)
+		return NULL;
+
+	dst->length = line->length;
+	strcpy(dst->data, line->data);
+
+	dst->prev = line->prev;
+	if (line->prev)
+		line->prev->next = dst;
+
+	dst->next = line->next;
+	if (line->next)
+		line->next->prev = dst;
+
+	free(line);
+
+	return dst;
+}
+
+struct line *line_from_string(const char *text)
+{
+	struct line *line;
+	size_t length = strlen(text);
+
+	line = line_new(length + 1);
+	if (line) {
+		line->length = length;
+		strcpy(line->data, text);
+	}
+
+	return line;
+}
+
+struct line *line_append(struct line *line, const char *text)
+{
+	line = line_expand(line, line->length + strlen(text) + 1);
+	if (line == NULL)
+		return NULL;
+
+	strcat(line->data, text);
+	line->length += strlen(text);
 
 	return line;
 }
@@ -53,40 +106,71 @@ void buffer_append_line(struct buffer *b, struct line *line)
 	while (l->next)
 		l = l->next;
 
-	l->next = line;
+	if (strstr((const char *)l->data, EOL_TOKEN)) {
+		l->next = line;
+		line->prev = l;
+		return;
+	}
+
+	line_append(l, line->data);
+	free(line);
+}
+
+int buffer_from_string(struct buffer *b, char *s)
+{
+	struct line *line;
+	char *current, *next;
+	char ch_tmp;
+
+	current = s;
+	while (1) {
+		next = strstr(current, EOL_TOKEN);
+
+		if (next) {
+			next += EOL_TOKEN_LENGTH;
+			ch_tmp = *next;
+			*next = '\0';
+		}
+
+		line = line_from_string(current);
+
+		if (next)
+			*next = ch_tmp;
+
+		if (line == NULL)
+			return -ENOMEM;
+
+		buffer_append_line(b, line);
+
+		if (next == NULL)
+			break;
+
+		current = next;
+	}
+
+	return 0;
 }
 
 int buffer_from_file(struct buffer *b, FILE *fp)
 {
 	char tmp[FILE_TMP_BUF_SIZE];
-	struct line *line;
-	char *p, *end;
 	size_t len;
+	int ret = 0;
 
-	len = fread(tmp, 1, FILE_TMP_BUF_SIZE - 1, fp);
-	tmp[len] = 0;
+	while(1) {
+		len = fread(tmp, 1, FILE_TMP_BUF_SIZE - 1, fp);
+		tmp[len] = 0;
 
-	p = tmp;
-	while (1) {
-		end = strstr(p, EOF_TOKEN);
-
-		if (end)
-			*end = 0;
-
-		line = line_new(p);
-		if (line == NULL)
+		if (len == 0)
 			break;
 
-		buffer_append_line(b, line);
-
-		if (end == NULL)
+		ret = buffer_from_string(b, tmp);
+		if (ret)
 			break;
 
-		p = end + strlen(EOF_TOKEN);
 	}
 
-
-	return 0;
+	return ret;
 }
 
 void screen_update(struct buffer *b)
@@ -96,8 +180,6 @@ void screen_update(struct buffer *b)
 	while (line) {
 		for (int i = 0; i < line->length; i++)
 			addch(line->data[i]);
-
-		addch('\n');
 
 		line = line->next;
 	}
@@ -129,6 +211,7 @@ int main(int argc, char *argv[])
 	noecho();
 	cbreak();
 
+	buf.lines = NULL;
 	err = buffer_from_file(&buf, fp);
 	if (err) {
 		printw("Unable to import file\n");
