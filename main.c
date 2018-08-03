@@ -2,12 +2,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include "buffer.h"
 #include "error.h"
 
 #define LOG_FILENAME	"owl.log"
 
 #define min(_x, _y)	((_x) < (_y)) ? (_x) : (_y)
+
+struct buffer *current_buffer;
 
 void info(const char *msg, ...)
 {
@@ -32,16 +35,29 @@ void screen_update(struct buffer *b)
 	int y = 0;
 
 	getmaxyx(stdscr, h, w);
+	info("h, w = %d, %d\nlimits: ", h, w);
 
 	while (line && (y < h)) {
 		move(y, 0);
 		for (i = 0, limit = min(w, line->length); i < limit; i++)
 			addch(line->data[i]);
 
+		info("%d->%d ", y, limit);
+
 		line = line->next;
 		y++;
 	}
 	refresh();
+}
+
+void on_resize(int signo)
+{
+	/* apparently you need to do this operations before repainting your
+	 * window in order for ncurses to pick up the new screen size */
+	endwin();
+	refresh();
+
+	screen_update(current_buffer);
 }
 
 int main(int argc, char *argv[])
@@ -50,6 +66,7 @@ int main(int argc, char *argv[])
 	char *fname;
 	FILE *fp;
 	int err;
+	char ch;
 
 	if (argc != 2) {
 		printf("Error: need a file as input parameter\n");
@@ -70,6 +87,10 @@ int main(int argc, char *argv[])
 	cbreak();
 
 	buf.lines = NULL;
+	current_buffer = &buf;
+
+	signal(SIGWINCH, on_resize);
+
 	err = buffer_from_file(&buf, fp);
 	if (err) {
 		printw("Unable to import file\n");
@@ -79,7 +100,10 @@ int main(int argc, char *argv[])
 	screen_update(&buf);
 
 end:
-	getch();
+	do {
+		ch = getch();
+	} while (ch != 'x');
+
 	endwin();
 
 	return 0;
