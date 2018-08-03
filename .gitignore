@@ -1,2 +1,2 @@
-.vagrant/
-ubuntu-*.log
+*.o
+*.exe
