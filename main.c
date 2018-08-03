@@ -5,16 +5,41 @@
 #include "buffer.h"
 #include "error.h"
 
+#define LOG_FILENAME	"owl.log"
+
+#define min(_x, _y)	((_x) < (_y)) ? (_x) : (_y)
+
+void info(const char *msg, ...)
+{
+	static FILE *fp = NULL;
+
+	if (fp == NULL)
+		fp = fopen(LOG_FILENAME, "w+");
+
+	if (fp == NULL)
+		return;
+
+	va_list args;
+	va_start(args, msg);
+	vfprintf(fp, msg, args);
+	va_end(args);
+}
 
 void screen_update(struct buffer *b)
 {
 	struct line *line = b->lines;
+	int w, h, i, limit;
+	int y = 0;
 
-	while (line) {
-		for (int i = 0; i < line->length; i++)
+	getmaxyx(stdscr, h, w);
+
+	while (line && (y < h)) {
+		move(y, 0);
+		for (i = 0, limit = min(w, line->length); i < limit; i++)
 			addch(line->data[i]);
 
 		line = line->next;
+		y++;
 	}
 	refresh();
 }
