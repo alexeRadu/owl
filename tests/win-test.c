@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	y = (LINES - h) / 2;
 	x = (COLS - w) / 2;
 
-	win = new_win(h, w, 10, 10);
+	win = new_win(h, w, y, x);
 
 	while((c = getch()) != 'q') {
 		switch (c) {
