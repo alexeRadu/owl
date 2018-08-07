@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	noecho();
 	keypad(stdscr, TRUE);
 
-	printw("Press F1 to exit");
+	printw("Press 'q' to exit");
 	refresh();
 
 	y = (LINES - h) / 2;
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
 	win = new_win(h, w, 10, 10);
 
-	while((c = getch()) != KEY_F(1)) {
+	while((c = getch()) != 'q') {
 		switch (c) {
 			case KEY_LEFT:
 				kill_win(win);
