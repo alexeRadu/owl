@@ -11,11 +11,14 @@ WINDOW *new_win(int h, int w, int y, int x)
 	return win;
 }
 
-void kill_win(WINDOW *win)
+void move_win(WINDOW *win, int y, int x)
 {
 	wborder(win, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
 	wrefresh(win);
-	delwin(win);
+
+	mvwin(win, y, x);
+	box(win, 0, 0);
+	wrefresh(win);
 }
 
 int main(int argc, char *argv[])
@@ -41,20 +44,16 @@ int main(int argc, char *argv[])
 	while((c = getch()) != 'q') {
 		switch (c) {
 			case KEY_LEFT:
-				kill_win(win);
-				win = new_win(h, w, y, --x);
+				move_win(win, y, --x);
 				break;
 			case KEY_RIGHT:
-				kill_win(win);
-				win = new_win(h, w, y, ++x);
+				move_win(win, y, ++x);
 				break;
 			case KEY_UP:
-				kill_win(win);
-				win = new_win(h, w, --y, x);
+				move_win(win, --y, x);
 				break;
 			case KEY_DOWN:
-				kill_win(win);
-				win = new_win(h, w, ++y, x);
+				move_win(win, ++y, x);
 				break;
 		}
 	}
