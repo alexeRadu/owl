@@ -1,10 +1,10 @@
-all: two-win
+all: multiwin
 
-two-win: two-win.c
-	gcc -o two-win two-win.c -lncurses
+multiwin: multiwin.c
+	gcc -o multiwin multiwin.c -lncurses
 
 win-test.exe: win-test.c
 	gcc -o win-test.exe win-test.c -lncurses
 
 clean:
-	-rm two-win
+	-rm multiwin
