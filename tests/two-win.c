@@ -62,6 +62,7 @@ void draw_full_square(const struct square *square)
 	int y, x;
 	int i, j;
 
+	wattron(win, COLOR_PAIR(1));
 	for (j = 0, y = square->y; j < square->h; j++, y++) {
 		x = square->x;
 		wmove(win, y, x);
@@ -70,6 +71,7 @@ void draw_full_square(const struct square *square)
 		}
 	}
 	wrefresh(win);
+	wattroff(win, COLOR_PAIR(1));
 }
 
 void square_move_left(struct square *square)
@@ -118,6 +120,9 @@ int main(int argc, char *argv[])
 	initscr();
 	cbreak();
 	noecho();
+	start_color();
+
+	init_pair(1, COLOR_BLUE, COLOR_RED);
 
 	printw("Press 'q' to exit");
 	refresh();
