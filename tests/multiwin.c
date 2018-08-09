@@ -12,10 +12,12 @@ struct square {
 	int y;
 	int w;
 	int h;
+	struct square *next;
+	struct square *prev;
 };
 
 WINDOW *win;
-struct square *square;
+struct square *sq_current;
 
 void square_clear(const struct square* square)
 {
@@ -69,42 +71,122 @@ void square_draw_selected(const struct square *square)
 	wattroff(win, COLOR_PAIR(2));
 }
 
-void square_move_left(struct square *square)
+void square_new()
 {
-	square_clear(square);
-	square->x--;
-	square_draw_selected(square);
-}
-
-void square_move_right(struct square *square)
-{
-	square_clear(square);
-	square->x++;
-	square_draw_selected(square);
-}
-
-void square_move_up(struct square *square)
-{
-	square_clear(square);
-	square->y--;
-	square_draw_selected(square);
-}
-
-void square_move_down(struct square *square)
-{
-	square_clear(square);
-	square->y++;
-	square_draw_selected(square);
-}
-
-void new_square()
-{
-	square = malloc(sizeof(square));
+	struct square *square = malloc(sizeof(struct square));
 
 	square->y = (WIN_HEIGHT - SQUARE_HEIGHT) / 2;
 	square->x = (WIN_WIDTH - SQUARE_WIDTH) / 2;
 	square->w = SQUARE_WIDTH;
 	square->h = SQUARE_HEIGHT;
+
+	if (sq_current == NULL) {
+		square->prev = square;
+		square->next = square;
+		sq_current = square;
+	} else {
+		square_draw(sq_current);
+
+		square->next = sq_current->next;
+		square->prev = sq_current;
+		sq_current->next->prev = square;
+		sq_current->next = square;
+		sq_current = square;
+	}
+
+	square_draw_selected(square);
+}
+
+void square_delete()
+{
+	struct square *square;
+
+	if (sq_current == NULL)
+		return;
+
+	square = sq_current;
+
+	if (sq_current->next == sq_current) {
+		sq_current = NULL;
+	} else {
+		sq_current->next->prev = sq_current->prev;
+		sq_current->prev->next = sq_current->next;
+		sq_current = sq_current->next;
+	}
+
+	square_clear(square);
+	free(square);
+
+	/* This is placed here rather than in the previous if/else so that the
+	 * cursor stays behinde the selected square */
+	if (sq_current != NULL)
+		square_draw_selected(sq_current);
+}
+
+void square_select_next()
+{
+	if (sq_current == NULL)
+		return;
+
+	if (sq_current->next == sq_current)
+		return;
+
+	square_draw(sq_current);
+	square_draw_selected(sq_current->next);
+	sq_current = sq_current->next;
+}
+
+void square_select_prev()
+{
+	if (sq_current == NULL)
+		return;
+
+	if (sq_current->prev == sq_current)
+		return;
+
+	square_draw(sq_current);
+	square_draw_selected(sq_current->prev);
+	sq_current = sq_current->prev;
+}
+
+void square_move_left()
+{
+	if (sq_current == NULL)
+		return;
+
+	square_clear(sq_current);
+	sq_current->x--;
+	square_draw_selected(sq_current);
+}
+
+void square_move_right()
+{
+	if (sq_current == NULL)
+		return;
+
+	square_clear(sq_current);
+	sq_current->x++;
+	square_draw_selected(sq_current);
+}
+
+void square_move_up()
+{
+	if (sq_current == NULL)
+		return;
+
+	square_clear(sq_current);
+	sq_current->y--;
+	square_draw_selected(sq_current);
+}
+
+void square_move_down()
+{
+	if (sq_current == NULL)
+		return;
+
+	square_clear(sq_current);
+	sq_current->y++;
+	square_draw_selected(sq_current);
 }
 
 int main(int argc, char *argv[])
@@ -129,34 +211,36 @@ int main(int argc, char *argv[])
 	box(win, 0, 0);
 	wrefresh(win);
 
-	new_square();
+	sq_current = NULL;
 
 	while ((c = getch()) != 'q') {
 		switch(c) {
 			case 'n':
-				square_draw_selected(square);
+				square_new();
 				break;
-			case 'c':
-				square_draw(square);
+			case 'd':
+				square_delete();
 				break;
-			case 's':
-				square_draw_selected(square);
+			case 'f':
+				square_select_next();
+				break;
+			case 'b':
+				square_select_prev();
 				break;
 			case 'h':
-				square_move_left(square);
+				square_move_left();
 				break;
 			case 'j':
-				square_move_down(square);
+				square_move_down();
 				break;
 			case 'k':
-				square_move_up(square);
+				square_move_up();
 				break;
 			case 'l':
-				square_move_right(square);
+				square_move_right();
 				break;
 		}
 	}
 
-	free(square);
 	endwin();
 }
