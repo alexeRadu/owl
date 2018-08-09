@@ -71,6 +71,17 @@ void square_draw_selected(const struct square *square)
 	wattroff(win, COLOR_PAIR(2));
 }
 
+int square_overlap(const struct square *sq1, const struct square *sq2)
+{
+	if ((sq1->x > sq2->x + sq2->w - 1) || (sq2->x > sq1->x + sq1->w - 1))
+		return 0;
+
+	if ((sq1->y > sq2->y + sq2->h - 1) || (sq2->y > sq1->y + sq1->h - 1))
+		return 0;
+
+	return 1;
+}
+
 void square_new()
 {
 	struct square *square = malloc(sizeof(struct square));
@@ -149,12 +160,30 @@ void square_select_prev()
 	sq_current = sq_current->prev;
 }
 
+void square_overlap_refresh()
+{
+	struct square *sq = sq_current;
+
+	if (sq_current == NULL)
+		return;
+
+	if (sq_current->next == sq_current)
+		return;
+
+	while ((sq = sq->next) != sq_current) {
+		if (square_overlap(sq_current, sq))
+			square_draw(sq);
+	}
+}
+
 void square_move_left()
 {
 	if (sq_current == NULL)
 		return;
 
 	square_clear(sq_current);
+	square_overlap_refresh();
+
 	sq_current->x--;
 	square_draw_selected(sq_current);
 }
@@ -165,6 +194,8 @@ void square_move_right()
 		return;
 
 	square_clear(sq_current);
+	square_overlap_refresh();
+
 	sq_current->x++;
 	square_draw_selected(sq_current);
 }
@@ -175,6 +206,8 @@ void square_move_up()
 		return;
 
 	square_clear(sq_current);
+	square_overlap_refresh();
+
 	sq_current->y--;
 	square_draw_selected(sq_current);
 }
@@ -185,6 +218,8 @@ void square_move_down()
 		return;
 
 	square_clear(sq_current);
+	square_overlap_refresh();
+
 	sq_current->y++;
 	square_draw_selected(sq_current);
 }
