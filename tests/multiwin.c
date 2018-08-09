@@ -17,7 +17,7 @@ struct square {
 WINDOW *win;
 struct square *square;
 
-void clear_square(const struct square* square)
+void square_clear(const struct square* square)
 {
 	int y, x;
 	int i, j;
@@ -32,32 +32,7 @@ void clear_square(const struct square* square)
 	wrefresh(win);
 }
 
-void draw_line_square(const struct square* square)
-{
-	int y = square->y;
-	int i;
-
-	clear_square(square);
-
-	mvwaddch(win, y, square->x, ACS_ULCORNER);
-	for (i = 0; i < (square->w - 2); i++)
-		waddch(win, ACS_HLINE);
-	waddch(win, ACS_URCORNER);
-
-	for (i = 0, y++; i < (square->h - 2); i++) {
-		mvwaddch(win, y, square->x, ACS_VLINE);
-		mvwaddch(win, y++, square->x + square->w - 1, ACS_VLINE);
-	}
-
-	mvwaddch(win, y, square->x, ACS_LLCORNER);
-	for (i = 0; i < square->w - 2; i++)
-		waddch(win, ACS_HLINE);
-	waddch(win, ACS_LRCORNER);
-
-	wrefresh(win);
-}
-
-void draw_full_square(const struct square *square)
+void square_draw(const struct square *square)
 {
 	int y, x;
 	int i, j;
@@ -74,32 +49,52 @@ void draw_full_square(const struct square *square)
 	wattroff(win, COLOR_PAIR(1));
 }
 
+void square_draw_selected(const struct square *square)
+{
+	int xstart = square->x;
+	int xend = square->x + square->w - 1;
+	int ystart = square->y;
+	int yend = square->y + square->h - 1;
+
+	square_draw(square);
+
+	wattron(win, COLOR_PAIR(2));
+
+	mvwaddch(win, ystart, xstart, ACS_ULCORNER);
+	mvwaddch(win, ystart, xend, ACS_URCORNER);
+	mvwaddch(win, yend, xstart, ACS_LLCORNER);
+	mvwaddch(win, yend, xend, ACS_LRCORNER);
+
+	wrefresh(win);
+	wattroff(win, COLOR_PAIR(2));
+}
+
 void square_move_left(struct square *square)
 {
-	clear_square(square);
+	square_clear(square);
 	square->x--;
-	draw_line_square(square);
+	square_draw_selected(square);
 }
 
 void square_move_right(struct square *square)
 {
-	clear_square(square);
+	square_clear(square);
 	square->x++;
-	draw_line_square(square);
+	square_draw_selected(square);
 }
 
 void square_move_up(struct square *square)
 {
-	clear_square(square);
+	square_clear(square);
 	square->y--;
-	draw_line_square(square);
+	square_draw_selected(square);
 }
 
 void square_move_down(struct square *square)
 {
-	clear_square(square);
+	square_clear(square);
 	square->y++;
-	draw_line_square(square);
+	square_draw_selected(square);
 }
 
 void new_square()
@@ -122,7 +117,8 @@ int main(int argc, char *argv[])
 	noecho();
 	start_color();
 
-	init_pair(1, COLOR_BLUE, COLOR_RED);
+	init_pair(1, COLOR_BLUE, COLOR_WHITE);
+	init_pair(2, COLOR_WHITE, COLOR_BLUE);
 
 	printw("Press 'q' to exit");
 	refresh();
@@ -138,13 +134,13 @@ int main(int argc, char *argv[])
 	while ((c = getch()) != 'q') {
 		switch(c) {
 			case 'n':
-				draw_line_square(square);
+				square_draw_selected(square);
 				break;
 			case 'c':
-				clear_square(square);
+				square_draw(square);
 				break;
 			case 's':
-				draw_full_square(square);
+				square_draw_selected(square);
 				break;
 			case 'h':
 				square_move_left(square);
