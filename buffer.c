@@ -5,15 +5,13 @@
 #include "error.h"
 
 
-#define FILE_TMP_BUF_SIZE	256
-#define EOL_TOKEN		"\n"
-#define EOL_TOKEN_LENGTH	1
+#define FILE_TMP_BUF_SIZE       256
+#define EOL_TOKEN               "\n"
+#define EOL_TOKEN_LENGTH        1
 
-
-
-void buffer_append_line(struct buffer *b, struct line *line)
+void buffer_append_line(Buffer *b, Line *line)
 {
-	struct line *l = b->lines;
+	Line *l = b->lines;
 
 	if (l == NULL) {
 		b->lines = line;
@@ -29,13 +27,13 @@ void buffer_append_line(struct buffer *b, struct line *line)
 		return;
 	}
 
-	line_append(l, line->data);
+	line_append_string(l, line->data);
 	free(line);
 }
 
-int buffer_from_string(struct buffer *b, char *s)
+int buffer_from_string(Buffer *b, char *s)
 {
-	struct line *line;
+	Line *line;
 	char *current, *next;
 	char ch_tmp;
 
@@ -49,7 +47,7 @@ int buffer_from_string(struct buffer *b, char *s)
 			*next = '\0';
 		}
 
-		line = line_from_string(current);
+		line = line_new_from_string(current);
 
 		if (next)
 			*next = ch_tmp;
@@ -68,7 +66,7 @@ int buffer_from_string(struct buffer *b, char *s)
 	return 0;
 }
 
-int buffer_from_file(struct buffer *b, FILE *fp)
+int buffer_from_file(Buffer *b, FILE *fp)
 {
 	char tmp[FILE_TMP_BUF_SIZE];
 	size_t len;

@@ -4,13 +4,13 @@
 #include "line.h"
 
 
-struct buffer {
-	struct line *lines;
-};
+typedef struct {
+	Line *lines;
+} Buffer;
 
 
-void buffer_append_line(struct buffer *b, struct line *line);
-int buffer_from_string(struct buffer *b, char *s);
-int buffer_from_file(struct buffer *b, FILE *fp);
+void buffer_append_line(Buffer *b, Line *line);
+int  buffer_from_string(Buffer *b, char *s);
+int  buffer_from_file(Buffer *b, FILE *fp);
 
 #endif /* BUFFER_H */

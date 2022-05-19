@@ -2,18 +2,16 @@
 #include <stdlib.h>
 #include "line.h"
 
-#define LINE_INIT_CAPACITY		128
 
-
-struct line *line_new(size_t length)
+Line *line_new(size_t length)
 {
-	struct line *line;
-	size_t capacity = LINE_INIT_CAPACITY;
+	Line *line;
+	size_t capacity = 128;
 
 	while (capacity < length)
 		capacity = capacity * 2;
 
-	line = malloc(sizeof(struct line) + capacity);
+	line = malloc(sizeof(Line) + capacity);
 	if (line) {
 		line->capacity = capacity;
 		line->length = 0;
@@ -24,9 +22,23 @@ struct line *line_new(size_t length)
 	return line;
 }
 
-struct line *line_expand(struct line *line, size_t new_size)
+Line *line_new_from_string(const char *text)
 {
-	struct line *dst = line;
+	Line *line;
+	size_t length = strlen(text);
+
+	line = line_new(length + 1);
+	if (line) {
+		line->length = length;
+		strcpy(line->data, text);
+	}
+
+	return line;
+}
+
+Line *line_expand(Line *line, size_t new_size)
+{
+	Line *dst = line;
 
 	if (new_size <= line->capacity)
 		return line;
@@ -51,21 +63,8 @@ struct line *line_expand(struct line *line, size_t new_size)
 	return dst;
 }
 
-struct line *line_from_string(const char *text)
-{
-	struct line *line;
-	size_t length = strlen(text);
 
-	line = line_new(length + 1);
-	if (line) {
-		line->length = length;
-		strcpy(line->data, text);
-	}
-
-	return line;
-}
-
-struct line *line_append(struct line *line, const char *text)
+Line *line_append_string(Line *line, const char *text)
 {
 	line = line_expand(line, line->length + strlen(text) + 1);
 	if (line == NULL)

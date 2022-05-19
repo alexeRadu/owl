@@ -10,12 +10,11 @@
 
 #define min(_x, _y)	((_x) < (_y)) ? (_x) : (_y)
 
-struct buffer *current_buffer;
+Buffer *current_buffer;
 
-
-void screen_update(struct buffer *b)
+void screen_update(Buffer *b)
 {
-	struct line *line = b->lines;
+	Line *line = b->lines;
 	int w, h, i, limit;
 	int y = 0;
 
@@ -44,7 +43,7 @@ void on_resize(int signo)
 
 int main(int argc, char *argv[])
 {
-	struct buffer buf;
+	Buffer buf;
 	char *fname;
 	FILE *fp;
 	int err;
